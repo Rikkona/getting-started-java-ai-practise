@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CHROME_VERSION: 153.0.8010.52
+  CHROME_VERSION: 155.0.8059.84
   ALLURE_VERSION: 2.46.1
   ALLURE_SHA256: 37428164f310c8d137cfdd2c3a25d049b233261ddab13e1bd4dfd7627b5cbf8d
 
