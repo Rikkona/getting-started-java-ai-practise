@@ -60,6 +60,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
 
       - name: Install Chrome for Testing and ChromeDriver
         id: chrome
@@ -180,7 +182,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Allure report for GitHub Pages
-        if: ${{ !cancelled() && steps.report.outcome == 'success' && github.ref_name == github.event.repository.default_branch }}
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' && steps.report.outcome == 'success' && github.ref_name == github.event.repository.default_branch }}
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: build/allure-report
@@ -188,7 +190,7 @@ jobs:
 
   deploy-report:
     needs: ui-tests
-    if: ${{ !cancelled() && needs.ui-tests.outputs.report-generated == 'true' && github.ref_name == github.event.repository.default_branch }}
+    if: ${{ !cancelled() && needs.ui-tests.result == 'success' && needs.ui-tests.outputs.report-generated == 'true' && github.ref_name == github.event.repository.default_branch }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
