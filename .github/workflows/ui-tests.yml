@@ -69,6 +69,21 @@ jobs:
           install-chromedriver: true
           install-dependencies: true
 
+      - name: Allow user namespaces for Chrome for Testing
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          cat <<EOF | sudo tee /etc/apparmor.d/chrome-cft > /dev/null
+          abi <abi/4.0>,
+          include <tunables/global>
+
+          profile chrome-cft "$CHROME_PATH" flags=(unconfined) {
+            userns,
+            include if exists <local/chrome>
+          }
+          EOF
+          sudo apparmor_parser -r /etc/apparmor.d/chrome-cft
+
       - name: Install Allure Report CLI
         run: |
           archive="$RUNNER_TEMP/allure-commandline-$ALLURE_VERSION.tgz"
@@ -124,7 +139,6 @@ jobs:
           -Dheadless=true
           "-Dselenide.browserBinary=$CHROME_PATH"
           "-Dwebdriver.chrome.driver=$CHROMEDRIVER_PATH"
-          "-Dchromeoptions.args=--no-sandbox"
 
       - name: Upload Allure results
         if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
