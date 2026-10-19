@@ -365,9 +365,9 @@ Blocker-дефектов не найдено; код не менялся. Заф
 
 ### Задача 5 — завершение
 
-- Коммиты: `ef7abad` (AppArmor-профиль вместо `--no-sandbox`), `898051a` (Selenide 7.19.0 + CfT 155), `7723eaa` (publish-on-green + cache-provider basic), `cead8c5` (очистка allure-results), плюс коммит плана. Временная ветка ci-check/sandbox-diag удаляется после приёмки; `sandbox-diag.yml` в master не входит.
+- Коммиты: `ef7abad` (AppArmor-профиль вместо `--no-sandbox`), `898051a` (Selenide 7.19.0 + CfT 155), `7723eaa` (publish-on-green + cache-provider basic), `cead8c5` (очистка allure-results), плюс коммит плана. Запушены на ai/master; временная ветка ci-check/sandbox-diag удалена локально и на remote; `sandbox-diag.yml` в master не входит.
 - Проверки перед отчётом: `actionlint` 0 ошибок, `git diff --check` чисто, локальный `./gradlew test -Dheadless=true` 3/3 без CDP-warning.
-- Проверено в реальном CI: runs 39286924890 (диагностика), 39287273490 (фикс на 153), 39287982359 (полный набор на 155) — все зелёные. Не проверено: деплой failed-отчёта на Pages (условие на default branch — проверяется только на master), визуальная приёмка отчёта пользователем.
+- Проверено в реальном CI: runs 39286924890 (диагностика), 39287273490 (фикс на 153), 39287982359 (полный набор на 155) — зелёные; после push — run [39288818070](https://github.com/qa-guru/getting-started-java-ai/actions/runs/39288818070) на master: ui-tests и deploy-report success, https://qa-guru.github.io/getting-started-java-ai/ — HTTP 200, `widgets/summary.json` passed=3/total=3. Не проверено: skip деплоя при падении на master (ломающий push намеренно не выполнялся — ограничение из задачи 3), визуальная приёмка отчёта пользователем.
 
 ### Открытые пункты после фазы 9
 
