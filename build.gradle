@@ -36,6 +36,9 @@ tasks.withType(JavaCompile) {
 
 test {
     useJUnitPlatform()
+    doFirst {
+        delete layout.buildDirectory.dir('allure-results')
+    }
     jvmArgs "-javaagent:${configurations.agent.singleFile}"
     systemProperty 'baseUrl', System.getProperty('baseUrl', 'https://github.com')
     systemProperty 'browser', System.getProperty('browser', 'chrome')
