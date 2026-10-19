@@ -9,7 +9,7 @@
 ## Согласованные решения
 
 - Java 21 через Gradle Java toolchain; Gradle Wrapper 9.6.0, bin-дистрибутив.
-- Selenide 7.18.2, JUnit Jupiter 6.1.3; исходно разрешённый Selenium — 4.49.0. Версии зависимостей без согласования не менять.
+- Selenide 7.19.0 (Selenium 4.51.0, CDP v153–v155), JUnit Jupiter 6.1.3; версия поднята в фазе 9 (findings фазы 8). Версии зависимостей без согласования не менять.
 - Defaults: baseUrl=https://github.com, browser=chrome, browserSize=1920x1080, headless=false.
 - Переопределение через -DbaseUrl, -Dbrowser, -DbrowserSize, -Dheadless с явной передачей этих свойств из Gradle в JVM тестов. Дополнительно (фаза 5) Gradle передаёт `selenide.browserBinary`, `webdriver.chrome.driver` и `chromeoptions.args` только если они заданы; без них локальное поведение не меняется.
 - В CI явно передавать headless=true.
@@ -23,7 +23,7 @@
 
 ## Текущее состояние
 
-Последняя сверка файлов и git: 2026-10-17 (фаза 8).
+Последняя сверка файлов и git: 2026-10-19 (фаза 9).
 
 - Фаза 0 завершена; исходный запуск проверен в этой переписке.
 - Фаза 1 завершена по отчёту пользователя. Коммит e55ae45ae599cdfa83cfac608dbe96b42d0a3916 и соответствующая конфигурация подтверждены чтением репозитория; браузерные проверки фазы 1 при сохранении плана не повторялись.
@@ -33,6 +33,7 @@
 - Фаза 5 завершена по отчёту: workflow проверен локально и в реальном GitHub Actions — успешные, контролируемые и диагностические запуски перечислены в разделе фазы 5. Успешный запуск 38311448403 повторно подтверждён через API в фазе 8.
 - Фазы 6 и 7 отложены по решению пользователя в домашнее задание учащимся; не реализованы и не отмечаются выполненными в демонстрационном проекте.
 - Фаза 8 (Review) выполнена 2026-10-17: объём фаз 0–5 проверен без изменения кода, workflow и инфраструктуры; findings, проверки и ограничения — в разделе фазы 8.
+- Фаза 9 (доработка findings фазы 8) выполнена 2026-10-19: установлена причина sandbox-падения Chrome, обновлены Selenide и CfT, Pages публикуется только при зелёных тестах, усилены Actions permissions, добавлена очистка allure-results — детали и проверки в разделе фазы 9.
 
 Порядок дальнейшей работы: демонстрационный объём фаз 0–5 завершён и проверен; фазы 6–7 выполняются учащимися отдельно, сначала согласование, затем по одной фазе с проверкой и собственным коммитом. Задание для учащихся (два варианта: полный путь 0–8 и короткий путь 6–7): [docs/homework.md](../homework.md).
 
@@ -165,9 +166,9 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 ### Согласовано на этапе A (2026-10-12)
 
 - [x] События: только `workflow_dispatch`; push, pull_request и расписание не используются.
-- [x] Публикация: артефакты (retention 14 дней) и публичный GitHub Pages (source = GitHub Actions). Pages публикуется только для запусков из default branch при успешно сгенерированном отчёте, в том числе при упавших тестах.
+- [x] Публикация: артефакты (retention 14 дней) и публичный GitHub Pages (source = GitHub Actions). Pages публикуется только для запусков из default branch при успешно сгенерированном отчёте; с фазы 9 — и только при зелёных тестах (решение publish-always пересмотрено, см. фазу 9).
 - [x] Inputs: `browser` (choice, только `chrome`) и `browserSize` (`^[0-9]{3,4}x[0-9]{3,4}$`). baseUrl зафиксирован как https://github.com, выбор тестов не предусмотрен, headless=true всегда.
-- [x] Браузер: Chrome for Testing 153.0.8010.52 + ChromeDriver той же версии (совпадает с поддержкой CDP в Selenium 4.49.0 — v151–153); пути передаются в тесты через Gradle-свойства.
+- [x] Браузер: Chrome for Testing + ChromeDriver одной версии; исходно 153.0.8010.52 (поддержка CDP в Selenium 4.49.0 — v151–153), в фазе 9 обновлено до 155.0.8059.84 (Stable на 2026-10-19, Selenium 4.51.0 — CDP v153–v155); пути передаются в тесты через Gradle-свойства.
 - [x] Репозиторий для реального CI: отдельный публичный `qa-guru/getting-started-java-ai` (remote `ai`); `origin` (qa-guru/getting-started-java) не меняется.
 - [x] GitHub secrets в фазе 5 не используются. Имена secrets/credentials, Telegram-уведомления (из каких CI, для каких исходов), расположение Jenkins и агента (ОС, label, инструменты) пока неизвестны — открытые вопросы фаз 6–7.
 
@@ -230,7 +231,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 
 В review не считать все красные запуски контролируемыми: в истории есть также реальные ошибки запуска Chrome, передачи свойств и настройки Pages. Последний зелёный запуск не отменяет этой истории и не доказывает отсутствие риска HTTP 429.
 
-Итоговые решения по браузеру: Chrome падает на этом runner без `--no-sandbox` — аргумент передаётся только в CI через `-Dchromeoptions.args=--no-sandbox`; локальные запуски без него. Компромисс принят: ephemeral runner, открывается только github.com. Уточнение фазы 8: настоящая причина падения не установлена (лог диагностики обрезан); setuid-helper фактически не применялся из-за неверного имени файла — вероятная причина (AppArmor/userns) остаётся неподтверждённой гипотезой, поэтому `--no-sandbox` считается принятым риском, а не проверенным решением.
+Итоговые решения по браузеру (исторически): Chrome падал на этом runner без `--no-sandbox` — аргумент передавался только в CI через `-Dchromeoptions.args=--no-sandbox`; локальные запуски без него. Компромисс был принят: ephemeral runner, открывается только github.com. Уточнение фазы 8: настоящая причина падения не установлена (лог диагностики обрезан); setuid-helper фактически не применялся из-за неверного имени файла — вероятная причина (AppArmor/userns) оставалась неподтверждённой гипотезой. Фаза 9: причина подтверждена, `--no-sandbox` заменён AppArmor-профилем для бинаря CfT — см. фазу 9.
 
 Изменённые файлы фазы: `.github/workflows/ui-tests.yml`, `build.gradle` (проброс `selenide.browserBinary`, `webdriver.chrome.driver`, `chromeoptions.args` — только если заданы), этот план. Коммиты: d473a02 (workflow), 3c490e5 (промежуточный план), 24bea81→f253482 (исправления CI: Pages policy, chrome sandbox helper → удалён, chromeoptions.args), финальный коммит плана — ниже.
 
@@ -302,13 +303,13 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 
 Blocker-дефектов не найдено; код не менялся. Зафиксировано:
 
-- **Существенный риск (доказанный дефект диагностики):** обоснование `--no-sandbox` неточно — setuid-helper ни разу не применялся (файл `chrome_sandbox`, искался `chrome-sandbox`); настоящая причина падения Chrome не установлена, AppArmor/userns — неподтверждённая гипотеза. Компромисс `--no-sandbox` остаётся принятым (ephemeral runner, только github.com) и не переносится на Jenkins/локальные запуски как default.
-- **Подтверждённое решение, не дефект:** publish-always — failed-отчёт с master публикуется на публичный Pages (согласовано на этапе A, подтверждено run `38309080672`); вложения failed-прогона (screenshot, page source, служебные данные runner) публичны — при смене политики добавить условие `needs.ui-tests.result == 'success'`.
-- **Улучшение:** CfT `153.0.8010.52` отстаёт от Stable (`155.0.8059.39` на дату проверки); Selenium 4.49.0 поддерживает CDP только v151–153 — обновление браузера требует сначала обновления стека, отдельное согласование.
-- **Улучшение:** локальные `build/allure-results` накапливают результаты разных прогонов (очистки нет) — локальный отчёт может смешивать прогоны; CI не затронут.
-- **Улучшение/security:** repository-level Actions defaults слабее job-level: `default_workflow_permissions=write`, approve PRs разрешены, `allowed_actions=all`, `sha_pinning_required=false` — любой будущий workflow без `permissions:` получит write-token; усиление — через Settings/API с разрешения.
-- **Улучшение:** `cache-provider: enhanced` у setup-gradle — proprietary-провайдер; open-source default — `basic`.
-- **Риск (принят):** зависимость от живого github.com — данные `qa.guru`, семантика `stars:>999999999`, возможные HTTP 429; без ретраев.
+- **Существенный риск — закрыт в фазе 9:** причина падения Chrome подтверждена (AppArmor-блокировка unprivileged user namespaces для CfT на ubuntu-24.04; точное сообщение `No usable sandbox!` — см. фазу 9). `--no-sandbox` убран; вместо него AppArmor-профиль для бинаря CfT — sandbox включён.
+- **Закрыто в фазе 9 (решение пересмотрено):** publish-always — failed-отчёт с master публиковался на публичный Pages (run `38309080672`); с фазы 9 публикация только при зелёных тестах (`needs.ui-tests.result == 'success'` + `steps.tests.outcome == 'success'` на staging-артефакте).
+- **Закрыто в фазе 9:** CfT и ChromeDriver обновлены до `155.0.8059.84` (Stable на день выполнения); Selenide 7.19.0 → Selenium 4.51.0 поддерживает CDP v153–v155 — version-mismatch warning устранён и локально, и в CI.
+- **Закрыто в фазе 9:** `build/allure-results` очищается перед каждым прогоном (`doFirst` в test task); два локальных прогона → ровно 3 `*-result.json`.
+- **Закрыто в фазе 9 (частично):** `default_workflow_permissions` write→read, `can_approve_pull_request_reviews` true→false через API. `allowed_actions=all` и `sha_pinning_required=false` не менялись (workflow использует сторонний browser-actions/setup-chrome; смена `allowed_actions` требует allowlist) — открытый пункт фазы 9.
+- **Закрыто в фазе 9:** `cache-provider: enhanced` — proprietary default setup-gradle v6.4.0 (виден в логе как «Enhanced Caching…»); явно закреплён open-source `basic` — в логе run 39287982359 «Basic Caching».
+- **Риск (принят):** зависимость от живого github.com — данные `qa.guru`, семантика `stars:>999999999`, возможные HTTP 429; без ретраев. Фаза 9 наблюдала единичный flake: GitHub отдал страницу-подсказку вместо результатов для `stars:<0` (прошло при немедленном повторе без изменений — транзиентное поведение GitHub, не браузера/стека).
 
 ### Непроверенное
 
@@ -317,6 +318,62 @@ Blocker-дефектов не найдено; код не менялся. Заф
 - Dispatch с невалидным `browserSize` и поведение `timeout-minutes` относительно загрузки артефактов — только по коду.
 - Настоящая причина sandbox-падения Chrome в CI — диагностический run не согласован и не выполнялся.
 - Интерактивная визуальная приёмка отчёта пользователем; macOS/Windows-специфика runner'ов.
+
+## Фаза 9 — Доработка findings финального review
+
+Статус: завершена 2026-10-19; итоговые изменения проверены, push на ai/master — после показа результатов и подтверждения пользователя.
+
+### Задача 1 — sandbox-диагностика (run [39286924890](https://github.com/qa-guru/getting-started-java-ai/actions/runs/39286924890), ветка ci-check/sandbox-diag)
+
+Временный workflow `.github/workflows/sandbox-diag.yml` (только на ветке, в master не входил) прогонял CfT напрямую с полным stderr и проверял гипотезу AppArmor. Факты с ubuntu-24.04 runner:
+
+- `kernel.apparmor_restrict_unprivileged_userns = 1`; `unshare --user --map-root-user true` → BLOCKED; 123 AppArmor-профиля загружено, для CfT-пути профиля нет.
+- CfT 153.0.8010.52 без `--no-sandbox`: exit 134, FATAL `No usable sandbox! ... Ubuntu 23.10+ ... AppArmor` (zygote_host_impl_linux.cc:129) — настоящая причина установлена, не «Chrome instance exited».
+- Контроль: предустановленный `/opt/google/chrome/chrome` работает (exit 0) — у него есть профиль `/etc/apparmor.d/chrome`.
+- `chrome_sandbox` подтверждён в листинге архива CfT (имя с подчёркиванием — finding фазы 8 верен).
+
+Проверенные альтернативы `--no-sandbox` (все по документации Chromium apparmor-userns-restrictions.md):
+
+| Вариант | Суть | Результат |
+|---|---|---|
+| A | setuid `chrome_sandbox` из архива CfT + `CHROME_DEVEL_SANDBOX` | exit 0, DOM отрендерен |
+| B | `CHROME_DEVEL_SANDBOX=/opt/google/chrome/chrome-sandbox` (стоковый helper) | exit 134 — у файла на runner нет setuid-бита (`-rwxrwxrwx`) |
+| C | AppArmor-профиль `userns` для бинаря CfT + `apparmor_parser -r` | exit 0, DOM отрендерен |
+| D | `sysctl kernel.apparmor_restrict_unprivileged_userns=0` (контроль гипотезы) | exit 0 |
+
+Итог: причина подтверждена — AppArmor-ограничение unprivileged userns для CfT. Выбран вариант C (AppArmor-профиль): сохраняет современный userns-сандбокс, тот же механизм, что у штатно установленного Chrome на Ubuntu 24.04; вариант A зафиксирован как проверенный запасной. `--no-sandbox` удалён из workflow; компромисс снят, переносить его на локальные запуски/Jenkins не требуется и не делается.
+
+Подтверждение на реальном workflow: run [39287273490](https://github.com/qa-guru/getting-started-java-ai/actions/runs/39287273490) (Chrome 153, без `--no-sandbox`, с профилем) — ui-tests success, 3/3.
+
+### Задача 2 — обновление стека
+
+- Selenide 7.18.2 → 7.19.0 (релиз 2026-10-10, Maven Central): тянет Selenium 4.51.0 (релиз 2026-10-09) с `selenium-devtools` v153/v154/v155. `allure-selenide`/`allure-jupiter` 3.0.0 и AspectJ 1.9.25 без изменений — совместимость по декларациям (allure-selenide нацелен на Selenide 7.x) и по фактическим прогонам.
+- CfT + ChromeDriver 153.0.8010.52 → 155.0.8059.84 — Stable по last-known-good-versions.json на 2026-10-19; совпадает с локальным Chrome 155.0.8059.84; версии браузера и драйвера равны.
+- Проверки: локально `./gradlew test -Dheadless=true` — 3/3, CDP-warning исчез; CI run [39287982359](https://github.com/qa-guru/getting-started-java-ai/actions/runs/39287982359) — зелёный (обе версии 155.0.8059.84 подтверждены логом).
+
+### Задача 3 — правки workflow
+
+- Pages публикуется только при зелёных тестах: `deploy-report` требует `needs.ui-tests.result == 'success'`; staging-артефакт Pages пропускается при падении тестов (`steps.tests.outcome == 'success'`). Решение publish-always фазы 5 отменено и зафиксировано здесь.
+- `cache-provider: basic` явно закреплён — default setup-gradle v6.4.0 `enhanced` (proprietary, виден в логе 39287273490); в run 39287982359 — «Basic Caching».
+- `--no-sandbox` снят по итогам задачи 1; вместо него шаг «Allow user namespaces for Chrome for Testing».
+- Непроверенное (ограничение зафиксировано): условие публикации завязано на default branch — skip при падении на временной ветке не проверяется, ломающий push в master ради проверки не выполнялся. Проверено: code review, actionlint 1.7.12 (0 ошибок), зелёные run'ы 39287273490 и 39287982359.
+
+### Задача 4 — репозиторий и build.gradle
+
+- `PUT /repos/qa-guru/getting-started-java-ai/actions/permissions/workflow` (HTTP 204): `default_workflow_permissions` write→read, `can_approve_pull_request_reviews` true→false; перечитано GET — значения применены. `allowed_actions=all` и `sha_pinning_required=false` сознательно не менялись: workflow использует сторонний `browser-actions/setup-chrome`, `allowed_actions` требует allowlist — остаётся открытым пунктом.
+- build.gradle: в `test` добавлено `doFirst { delete layout.buildDirectory.dir('allure-results') }`. Проверка: при старте было 10 `*-result.json` от прошлых прогонов → после прогона 3; второй реальный прогон (`--rerun-tasks`) → снова ровно 3 `*-result.json`; up-to-date-прогон без выполнения тестов директорию не трогает.
+
+### Задача 5 — завершение
+
+- Коммиты: `ef7abad` (AppArmor-профиль вместо `--no-sandbox`), `898051a` (Selenide 7.19.0 + CfT 155), `7723eaa` (publish-on-green + cache-provider basic), `cead8c5` (очистка allure-results), плюс коммит плана. Временная ветка ci-check/sandbox-diag удаляется после приёмки; `sandbox-diag.yml` в master не входит.
+- Проверки перед отчётом: `actionlint` 0 ошибок, `git diff --check` чисто, локальный `./gradlew test -Dheadless=true` 3/3 без CDP-warning.
+- Проверено в реальном CI: runs 39286924890 (диагностика), 39287273490 (фикс на 153), 39287982359 (полный набор на 155) — все зелёные. Не проверено: деплой failed-отчёта на Pages (условие на default branch — проверяется только на master), визуальная приёмка отчёта пользователем.
+
+### Открытые пункты после фазы 9
+
+- `allowed_actions`/`sha_pinning_required` на уровне репозитория — сузить (allowlist + sha_pinning_required=true) при следующем согласовании; workflow уже закреплён по SHA на уровне файла.
+- Визуальная приёмка обновлённого Pages-отчёта после первого зелёного run на master.
+- Фазы 6–7 — домашнее задание, не реализуются.
 
 ## Базовые команды проверки
 
