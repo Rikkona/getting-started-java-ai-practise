@@ -52,6 +52,9 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Telegram notification logic without sending
+        run: python3 -B -m unittest discover -s scripts -p 'test_*.py' -v
+
       - name: Set up Java 21
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
@@ -187,6 +190,15 @@ jobs:
         with:
           path: build/allure-report
           retention-days: 14
+
+      - name: Notify Telegram about UI test job
+        if: ${{ !cancelled() }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          JOB_STATUS: ${{ job.status }}
+        run: python3 -B scripts/telegram_notify.py
 
   deploy-report:
     needs: ui-tests
