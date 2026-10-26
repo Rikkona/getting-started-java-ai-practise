@@ -23,6 +23,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
+                    env.BROWSER_SIZE = params.BROWSER_SIZE ?: '1920x1080'
                     env.RUN_DIRECTORY = "build/jenkins-run-${env.BUILD_NUMBER}"
                     env.TOOLS_DIR = "${env.WORKSPACE}/build/jenkins-tools"
                     dir(env.RUN_DIRECTORY) {

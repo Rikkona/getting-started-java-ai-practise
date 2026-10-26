@@ -319,7 +319,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 
 ## Фаза 7 — Jenkins
 
-Статус своего форка: фаза в работе. Окружение исследовано по пользовательским логам учебного стенда; подготовлен Jenkinsfile. Полный pipeline, публикация отчётов, Python на агенте и Telegram из Jenkins пока не проверены реальным запуском. Историческое решение отложить фазу относится к исходному демонстрационному проекту.
+Статус своего форка: фаза в работе. Окружение исследовано по пользовательским логам учебного стенда; подготовлен Jenkinsfile. Python и проверки уведомлений отработали на агенте в сборке 8. Полный pipeline, публикация отчётов и Telegram из Jenkins пока не проверены. Историческое решение отложить фазу относится к исходному демонстрационному проекту.
 
 ### Согласованные настройки и результаты диагностики
 
@@ -330,7 +330,13 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Основной Pipeline: Chrome headless, baseUrl github.com, параметр BROWSER_SIZE (default 1920x1080). Падение Gradle/компиляции/тестов, отсутствие результатов и ошибка отчёта дают FAILURE; JUnit публикуется и может пометить этап UNSTABLE, исходный FAILURE не улучшается. Ошибка только уведомления не меняет результат сборки.
 - Отчёты: JUnit plugin для XML; Allure 2.46.1 CLI без предположений о совместимости Allure Jenkins plugin. Сохраняются JUnit XML, Gradle HTML, Allure results с вложениями и готовый HTML в `allure-report.tgz`, даже при падении тестов. Архив нужно скачать и распаковать для просмотра; встроенная HTML-публикация не настраивается.
 - Telegram: Secret text credentials с ID `rikkona-telegram-bot-token`, `rikkona-telegram-chat-id`. SEND_TELEGRAM default false до их настройки; credentials связываются только в шаге уведомления с выключенным shell tracing. Публичному Git checkout credentials не нужны. Значения токенов не запрашиваются в чат.
-- Python: выбран standalone CPython 3.13.17, release 20261021, linux x86_64 GNU, SHA-256 `cbda6f7767884fc456860b11fd184391a9320cae00a86c0f49a1c7ac6e236f7a` из GitHub API официального python-build-standalone. URL и digest закреплены в скрипте; запрос latest использовался только для выбора конкретного релиза, в Pipeline latest нет. Исполнение этого Python на агенте пока не проверено.
+- Python: выбран standalone CPython 3.13.17, release 20261021, linux x86_64 GNU, SHA-256 `cbda6f7767884fc456860b11fd184391a9320cae00a86c0f49a1c7ac6e236f7a` из GitHub API официального python-build-standalone. URL и digest закреплены в скрипте; запрос latest использовался только для выбора конкретного релиза, в Pipeline latest нет. В сборке 8 пользовательский лог подтвердил checksum OK, Python 3.13.17 и 12/12 успешных проверок уведомлений под пользователем jenkins.
+
+### Первый запуск Jenkinsfile — сборка 8
+
+- По предоставленному пользователем логу [сборки 8](https://jenkins.qa.guru/job/Rikkona-ui-tests/8/): SCM загрузил Jenkinsfile и checkout `e934920`; подготовка Allure/Chrome/ChromeDriver/Python и 12 проверок уведомлений успешны. Это исполнение на стенде по пользовательскому логу, агент самостоятельно консоль Jenkins не читал.
+- Сборка остановилась до компиляции: `scripts/jenkins-test.sh: 4: BROWSER_SIZE: BROWSER_SIZE is required`, exit 2. UI-тесты пропущены, Telegram выключен, итог FAILURE корректен. Причина: Jenkinsfile полагался на автоматический экспорт параметра при первом запуске после его объявления; фактически переменная в окружении скрипта отсутствовала.
+- Исправление: в начале Checkout явно задаётся `env.BROWSER_SIZE = params.BROWSER_SIZE ?: '1920x1080'`; пользовательский параметр сохраняется, при его отсутствии используется согласованный default. Валидация размера в shell остаётся обязательной. Это исправление пока не проверено повторным Jenkins-запуском.
 
 ### Подготовленные файлы и локальные проверки
 
