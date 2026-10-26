@@ -10,6 +10,8 @@ pipeline {
     parameters {
         string(name: 'BROWSER_SIZE', defaultValue: '1920x1080', description: 'Browser window size, WIDTHxHEIGHT')
         booleanParam(name: 'SEND_TELEGRAM', defaultValue: false, description: 'Enable after configuring the two Secret text credentials')
+        credentials(name: 'TELEGRAM_BOT_CREDENTIAL', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: '', required: false, description: 'Select your Telegram bot Secret text credential')
+        credentials(name: 'TELEGRAM_CHAT_CREDENTIAL', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: '', required: false, description: 'Select your Telegram chat Secret text credential')
     }
 
     environment {
@@ -108,8 +110,8 @@ pipeline {
                                 env.RUN_URL = env.BUILD_URL
                                 catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE', catchInterruptions: false) {
                                     withCredentials([
-                                        string(credentialsId: 'rikkona-telegram-bot-token', variable: 'TELEGRAM_BOT_TOKEN'),
-                                        string(credentialsId: 'rikkona-telegram-chat-id', variable: 'TELEGRAM_CHAT_ID')
+                                        string(credentialsId: 'TELEGRAM_BOT_CREDENTIAL', variable: 'TELEGRAM_BOT_TOKEN'),
+                                        string(credentialsId: 'TELEGRAM_CHAT_CREDENTIAL', variable: 'TELEGRAM_CHAT_ID')
                                     ]) {
                                         sh '''
                                             set +x
