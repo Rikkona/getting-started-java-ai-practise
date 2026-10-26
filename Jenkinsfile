@@ -15,14 +15,14 @@ pipeline {
     environment {
         CI_NAME = 'Jenkins'
         PROJECT_NAME = 'Rikkona/getting-started-java-ai-practise'
-        TEST_OUTCOME = 'skipped'
-        COMPILE_OK = 'false'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 script {
+                    env.TEST_OUTCOME = 'skipped'
+                    env.COMPILE_OK = 'false'
                     env.BROWSER_SIZE = params.BROWSER_SIZE ?: '1920x1080'
                     env.RUN_DIRECTORY = "build/jenkins-run-${env.BUILD_NUMBER}"
                     env.TOOLS_DIR = "${env.WORKSPACE}/build/jenkins-tools"
@@ -76,6 +76,10 @@ pipeline {
                     dir(env.RUN_DIRECTORY) {
                         try {
                             try {
+                                if (currentBuild.currentResult == 'SUCCESS' &&
+                                    (env.COMPILE_OK != 'true' || env.TEST_OUTCOME != 'success')) {
+                                    error 'UI test completion flags are inconsistent with a successful build.'
+                                }
                                 if (env.TEST_OUTCOME != 'skipped') {
                                     junit testResults: 'build/test-results/test/TEST-*.xml', allowEmptyResults: false
                                 }
