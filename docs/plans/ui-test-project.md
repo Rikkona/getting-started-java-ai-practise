@@ -43,11 +43,11 @@
 
 Репозиторий: `Rikkona/getting-started-java-ai-practise`, ветка `master`, исходный HEAD `fdfab1f`. Перед проверкой рабочее дерево чистое.
 
-- [ ] `gradlew test` зелёный, lifecycle корректен: по коду `@BeforeEach` настраивает браузер, `@AfterEach` вызывает `closeWebDriver()`. Реальный запуск остановился до тестов на `compileTestJava`: `AccessDeniedException` при чтении `selenium-remote-driver-4.51.0.jar` из пользовательского Gradle-кэша. Lifecycle в этом окружении исполнением не подтверждён.
-- [x] Page Object на месте: `SearchPage` и `SearchResultsPage`; assertions находятся в `shouldHaveResult` / `shouldBeEmpty`, три теста используют fluent API.
-- [ ] Allure строит отчёт из `build/allure-results`: CLI 2.46.1 доступен, путь результатов настроен в `allure.properties`; после остановки компиляции результатов нет, содержательный отчёт не проверен. Пустой отчёт не является подтверждением.
-- [ ] GitHub Actions: workflow содержит запуск тестов, JUnit/Allure-артефакты и публикацию Pages при успехе на default branch. Публичный GitHub API для этого форка вернул `total_count=0` для Actions runs и `has_pages=false`; реальных запусков нет. Решение об использовании Pages в форке пока не принято.
-- [x] План актуализирован этой проверкой, `AGENTS.md` содержит правила работы.
+- [x] `gradlew test` зелёный, lifecycle корректен: пользователь выполнил `.\gradlew.bat test --rerun-tasks --console=plain` в PowerShell PyCharm с Java 21 и пользовательским GRADLE_USER_HOME; `BUILD SUCCESSFUL in 52s`, задача test выполнена. Пользователь подтвердил 3 passed в локальном Allure и автоматическое закрытие окон Chrome. Это пользовательская проверка; запуск агента ранее остановился до тестов из-за отказа доступа к кэшу.
+- [x] Page Object на месте: `SearchPage` и `SearchResultsPage`; assertions находятся в `shouldHaveResult` / `shouldBeEmpty`, три теста используют fluent API (проверено агентом по исходникам).
+- [x] Allure строит отчёт из `build/allure-results`: пользователь выполнил `allure generate build/allure-results --clean -o build/allure-report`, получил `Report successfully generated`, открыл отчёт через `allure open` и подтвердил 3 passed и видимые шаги.
+- [x] GitHub Actions: пользователь включил workflows и выполнил [run 40282158206](https://github.com/Rikkona/getting-started-java-ai-practise/actions/runs/40282158206). Агент прочитал API: completed/success, head SHA `fdfab1fd84460fcc99f29ffeb223d024cfe9b9c5`; артефакты `junit-and-gradle-report`, `allure-results`, `allure-report`, `github-pages` существуют и не expired. На скриншоте пользователя ui-tests и deploy-report зелёные. Pages опубликован: [Allure](https://rikkona.github.io/getting-started-java-ai-practise/); агент проверил `widgets/summary.json`: total=3, passed=3, failed=0, broken=0, skipped=0. Визуальная проверка шагов пользователем относится к локальному отчёту.
+- [x] План актуализирован итогами проверки, `AGENTS.md` содержит правила работы.
 
 ### Окружение и фактические команды
 
@@ -59,7 +59,7 @@
 - `gh auth status`: команда `gh` отсутствует. Публичные данные прочитаны через Git for Windows curl с проверкой TLS: `GET https://api.github.com/repos/Rikkona/getting-started-java-ai-practise/actions/runs?per_page=5` и `GET https://api.github.com/repos/Rikkona/getting-started-java-ai-practise`. Windows curl / Invoke-RestMethod в этом сеансе завершались ошибкой TLS; проверка сертификатов не отключалась.
 - Справка генератора проверена командой `allure --help`. `allure generate --help` у этой версии трактует `--help` как каталог и создаёт пустой отчёт; такой результат не засчитан.
 
-Итог: входной чек-лист пока не пройден. Следующие действия в рамках подготовки: устранить отказ доступа к Gradle-кэшу, получить зелёный локальный прогон и Allure-отчёт с тремя тестами; настроить доступ к GitHub для реального CI-прогона своего форка и согласовать Pages. Фазы 6–7 до закрытия входных требований не начинать.
+Итог: входной чек-лист пройден, все пять пунктов подтверждены указанными источниками. Первоначальные ограничения сеанса агента сохранены выше как история диагностики; они не воспроизвелись при запуске пользователем. Пользователь создал коммит первоначальной проверки `714d389` в своём терминале; CI выполнен на исходном `fdfab1f` (изменения `714d389` затрагивают только план). Следующая фаза — согласование Telegram-уведомлений (фаза 6); реализацию не начинать до подтверждения пользователя. Папка `.idea/` — пользовательский untracked WIP, не изменялась и в коммит не включается.
 
 ## Фаза 0 — Baseline
 
