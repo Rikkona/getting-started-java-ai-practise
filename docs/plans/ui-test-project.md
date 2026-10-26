@@ -319,7 +319,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 
 ## Фаза 7 — Jenkins
 
-Статус своего форка: фаза в работе. По пользовательскому логу сборки 9 компиляция и UI-тесты прошли; Python и проверки уведомлений выполняются на агенте. Публикация JUnit, генерация Allure и Telegram из Jenkins пока не подтверждены. Исправлен пропуск отчётов из-за способа объявления изменяемых флагов; нужен повторный запуск. Историческое решение отложить фазу относится к исходному демонстрационному проекту.
+Статус своего форка: фаза в работе. По пользовательскому логу сборки 10 компиляция, UI-тесты, запись JUnit, генерация Allure и шаг архивирования успешны. Число UI-тестов, содержимое артефактов и визуальное открытие отчёта ещё не сверены; Telegram из Jenkins и реальные негативные сценарии пока не проверены. Историческое решение отложить фазу относится к исходному демонстрационному проекту.
 
 ### Согласованные настройки и результаты диагностики
 
@@ -345,13 +345,20 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Установлен дефект Jenkinsfile: изменяемые `COMPILE_OK`/`TEST_OUTCOME` объявлены в Declarative environment, значения которого действуют через withEnv и имеют приоритет над последующими присваиваниями env. Из-за сохранённых false/skipped условия post-блока не сработали. Начальные значения перенесены в script этапа Checkout, рядом с остальными изменяемыми переменными; Declarative environment оставлен только для постоянных CI_NAME/PROJECT_NAME.
 - В post добавлена проверка согласованности: SUCCESS без флагов успешного завершения компиляции/тестов теперь даёт явную ошибку вместо молчаливого пропуска отчётов. Изменения проверены чтением diff и whitespace; выполнение исправленного post-блока требует следующего Jenkins-запуска. Локальные Python и shell-скрипты этим исправлением не менялись.
 
+### Успешный запуск с отчётами — сборка 10
+
+- По предоставленному пользователем логу [сборки 10](https://jenkins.qa.guru/job/Rikkona-ui-tests/10/): checkout `1d90072`, подготовка закреплённых инструментов и все 12 проверок уведомлений успешны. Gradle `testClasses` — BUILD SUCCESSFUL in 36s; задача `test` — BUILD SUCCESSFUL in 36s (1 executed, 2 up-to-date).
+- Post-блок теперь выполнил `junit` с `Recording test results`; затем Allure CLI 2.46.1 выдал `Report successfully generated to build/allure-report`, создан `build/allure-report.tgz`, выполнен archiveArtifacts. Итог Jenkins SUCCESS. Это подтверждение исполнения шагов по пользовательскому логу; точное число UI-тестов и фактическое содержимое сохранённых артефактов ещё не прочитаны.
+- Сообщение `[Checks API] No suitable checks publisher found` не остановило JUnit/сборку; публикация GitHub Checks не входит в согласованный объём и не настраивалась. Telegram явно пропущен, SEND_TELEGRAM выключен; доставка из Jenkins этим запуском не подтверждается.
+- Следующие проверки: страница Test Result с числом тестов, список артефактов, открытие Allure-отчёта; далее credentials и отдельный запуск с Telegram. Падение assertion, ошибка компиляции, отсутствие результатов и сохранение диагностики при этих исходах пока не проверены на Jenkins.
+
 ### Подготовленные файлы и локальные проверки
 
 - `Jenkinsfile`: SCM checkout в отдельный `build/jenkins-run-BUILD_NUMBER`, инструменты в `build/jenkins-tools`, Gradle от пользователя jenkins с отдельным GRADLE_USER_HOME. Владелец меняется только у checkout текущего запуска; чужие задачи и их каталоги не затрагиваются. Старые результаты не копируются в новый checkout.
 - `scripts/jenkins-tools.sh`: закреплённые инструменты в workspace, проверки SHA-256 Allure/Python и версий Chrome/драйвера. `scripts/jenkins-test.sh`: валидация размера окна и Java 21, отдельная компиляция и запуск тестов, согласованный chromeoptions.args только в Jenkins.
 - `scripts/telegram_notify.py`: добавлены необязательные CI_NAME/PROJECT_NAME/CI_BRANCH/CI_COMMIT/RUN_URL для Jenkins; прежние GitHub defaults сохранены. Добавлена проверка сообщения Jenkins.
 - Собственная проверка агента: `python -B -m unittest discover -s scripts -p 'test_*.py' -v` — 12 тестов, OK. Отдельные команды `bash -n scripts/jenkins-tools.sh` и `bash -n scripts/jenkins-test.sh` — обе exit 0. `git diff --check` и локальные Markdown-ссылки — без ошибок.
-- Отдельная проверка Jenkins Declarative linter не выполнялась; сборки 8–9 подтвердили принятие Jenkinsfile и работу SCM/основных этапов. Наличие и выполнение JUnit/Credentials Binding steps, отчёты и Telegram ещё предстоит проверить. Наличие файлов не считается проверенной интеграцией.
+- Отдельная проверка Jenkins Declarative linter не выполнялась; сборки 8–10 подтвердили принятие Jenkinsfile и работу SCM/основных этапов, сборка 10 — JUnit и генерацию Allure. Credentials Binding и Telegram ещё предстоит проверить. Наличие файлов не считается проверенной интеграцией.
 - Для проверки на стенде: настроить Pipeline script from SCM (Git, URL своего публичного репозитория, `*/master`, Script Path `Jenkinsfile`), затем success, assertion failure, compile failure и отсутствие результатов на отдельных временных ревизиях; сверить статусы, артефакты и Telegram. Негативные сценарии фазы 7 пока не выполнены.
 
 ### Перед реализацией уточнить
