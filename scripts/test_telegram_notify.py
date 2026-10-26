@@ -5,6 +5,9 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+import socket
+import ssl
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import Mock
 import urllib.request
@@ -108,6 +111,29 @@ class ResultsTests(unittest.TestCase):
 
 
 class HttpTests(unittest.TestCase):
+    def test_safe_error_categories(self):
+        secret = 'fake-token fake-chat https://private.example'
+        failures = (
+            (urllib.error.HTTPError(secret, 401, secret, {}, None), 'HTTP 401'),
+            (urllib.error.URLError(ssl.SSLCertVerificationError(secret)), 'TLS certificate verification failed'),
+            (urllib.error.URLError(socket.gaierror(secret)), 'DNS resolution failed'),
+            (urllib.error.URLError(TimeoutError(secret)), 'timeout'),
+            (urllib.error.URLError(OSError(secret)), 'network connection failed'),
+            (TimeoutError(secret), 'timeout'),
+            (ssl.SSLCertVerificationError(secret), 'TLS certificate verification failed'),
+            (ValueError(secret), 'invalid JSON response'),
+            (RuntimeError(secret), 'details withheld'),
+        )
+        for failure, category in failures:
+            with self.subTest(category=category):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    self.assertFalse(notify.send_message('fake-token', 'fake-chat', 'message',
+                                                        opener=Mock(side_effect=failure)))
+                self.assertIn(category, output.getvalue())
+                for value in ('fake-token', 'fake-chat', 'private.example'):
+                    self.assertNotIn(value, output.getvalue())
+
     def test_real_socket_timeout(self):
         release = threading.Event()
 
@@ -161,11 +187,16 @@ class HttpTests(unittest.TestCase):
 
             for status, body, expected in ((200, b'{"ok":true}', True),
                                           (200, b'{"ok":false}', False),
+                                          (200, b'{"ok":false,"error_code":400,"description":"fake-token fake-chat"}', False),
                                           (500, b'{"ok":true}', False),
                                           (200, b'broken', False),
                                           (200, b'[]', False)):
                 server.response_status, server.response_body = status, body
-                self.assertEqual(notify.send_message('fake-token', 'fake-chat', 'message', opener=opener), expected)
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    self.assertEqual(notify.send_message('fake-token', 'fake-chat', 'message', opener=opener), expected)
+                self.assertNotIn('fake-token', output.getvalue())
+                self.assertNotIn('fake-chat', output.getvalue())
             self.assertEqual(received[0], {'chat_id': 'fake-chat', 'text': 'message'})
             timeout_opener = Mock(side_effect=TimeoutError('fake-token fake-chat'))
             self.assertFalse(notify.send_message('fake-token', 'fake-chat', 'message',

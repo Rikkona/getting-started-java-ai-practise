@@ -1,6 +1,9 @@
 import json
 import os
 from pathlib import Path
+import socket
+import ssl
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -61,8 +64,41 @@ def send_message(token, chat_id, message, timeout=10, opener=urllib.request.urlo
     try:
         with opener(request, timeout=timeout) as response:
             payload = json.load(response)
-            return response.status == 200 and isinstance(payload, dict) and payload.get('ok') is True
+            if response.status != 200:
+                print(f'Telegram diagnostic: HTTP {int(response.status)}.')
+                return False
+            if not isinstance(payload, dict) or payload.get('ok') is not True:
+                code = payload.get('error_code') if isinstance(payload, dict) else None
+                suffix = f' Error code: {code}.' if type(code) is int and 100 <= code <= 599 else ''
+                print(f'Telegram diagnostic: API did not confirm success.{suffix}')
+                return False
+            return True
+    except urllib.error.HTTPError as failure:
+        print(f'Telegram diagnostic: HTTP {int(failure.code)}.')
+        return False
+    except (TimeoutError, socket.timeout):
+        print('Telegram diagnostic: connection or response timeout.')
+        return False
+    except ssl.SSLCertVerificationError:
+        print('Telegram diagnostic: TLS certificate verification failed.')
+        return False
+    except urllib.error.URLError as failure:
+        reason = failure.reason
+        if isinstance(reason, ssl.SSLCertVerificationError):
+            category = 'TLS certificate verification failed'
+        elif isinstance(reason, (TimeoutError, socket.timeout)):
+            category = 'connection or response timeout'
+        elif isinstance(reason, socket.gaierror):
+            category = 'DNS resolution failed'
+        else:
+            category = 'network connection failed'
+        print(f'Telegram diagnostic: {category}.')
+        return False
+    except (ValueError, UnicodeError):
+        print('Telegram diagnostic: invalid JSON response.')
+        return False
     except Exception:
+        print('Telegram diagnostic: request failed; details withheld.')
         return False
 
 

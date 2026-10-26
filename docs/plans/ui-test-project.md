@@ -355,6 +355,14 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Последующая пользовательская визуальная приёмка: страница Tests сборки 10 показывает total=3, passed=3, failed=0, skipped=0. Скриншот Status подтверждает `allure-report.tgz` (1.08 MiB), три result.json, container.json, Gradle HTML/CSS/JS и `TEST-tests.SearchTests.xml`. Пользователь скачал и открыл отчёт: скриншоты Allure показывают 3 test cases, 100% passed и шаги выбранного `noResultsForHugeStarsCountTest()`, включая закрытие webdriver. Содержимое всех файлов программно не перечитывалось; это приёмка по пользовательским скриншотам и подтверждению «все хорошо».
 - Следующий запуск после изменения параметров нужен для регистрации новых полей Jenkins; SEND_TELEGRAM пока false. Затем пользователь выбирает два личных Secret text credentials и включает SEND_TELEGRAM; доставка сверяется с консолью, JUnit и полученным сообщением. Фаза остаётся открытой до этих и негативных проверок.
 
+### Отправка Telegram — сборка 12
+
+- По пользовательскому логу [сборки 12](https://jenkins.qa.guru/job/Rikkona-ui-tests/12/): checkout `620cba9`, подготовка инструментов, 12 проверок уведомлений, компиляция и UI-тесты успешны; JUnit записан, Allure сгенерирован и архивирован.
+- SEND_TELEGRAM включён: withCredentials выполнил привязку TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID и сообщил о маскировании, Python запущен. Следовательно, механизм выбора личных credentials сработал; правильность самих значений этим не подтверждается.
+- Python выдал `Telegram notification failed; original job result is preserved`; итог сборки SUCCESS сохранился. Пользователь сообщил, что уведомление не пришло. Причина неизвестна: прежняя версия скрипта скрывала все детали исключения и не различала HTTP/API/TLS/DNS/timeout.
+- Добавлена безопасная диагностика: HTTP status, числовой API error_code в диапазоне 100–599 либо фиксированная категория TLS/DNS/timeout/network/invalid JSON. URL, текст исключения, description и тело ответа не выводятся. Ретраев, отключения TLS-проверки и изменений credentials нет.
+- Собственная проверка агента: `python -B -m unittest discover -s scripts -p 'test_*.py' -v` — 13 тестов, OK; категории ошибок проверены с фиктивными секретами внутри исключений, отсутствие утечки проверено assertions. Локальный mock HTTP проверяет также description с фиктивными секретами. На Jenkins диагностическая версия ещё не запускалась; нужен следующий запуск для установления причины.
+
 ### Подготовленные файлы и локальные проверки
 
 - `Jenkinsfile`: SCM checkout в отдельный `build/jenkins-run-BUILD_NUMBER`, инструменты в `build/jenkins-tools`, Gradle от пользователя jenkins с отдельным GRADLE_USER_HOME. Владелец меняется только у checkout текущего запуска; чужие задачи и их каталоги не затрагиваются. Старые результаты не копируются в новый checkout.
