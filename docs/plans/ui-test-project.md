@@ -31,7 +31,7 @@
 - Фаза 3 завершена по отчёту пользователя, коммит 1312c8da32be42e5351af1334cf0bf035c65ab54 подтверждён в истории: локаторы и взаимодействия перенесены в pages.SearchPage и pages.SearchResultsPage, тесты и TestBase перемещены в package tests. Структура и сохранение assertions подтверждены чтением файлов; браузерные проверки при обновлении плана не повторялись.
 - Фаза 4 завершена в этой сессии: Allure Java 3.0.0 (адаптеры) + Allure Report 2.46.1 CLI (генератор); проверки и ограничения — в разделе фазы 4.
 - Фаза 5 завершена по отчёту: workflow проверен локально и в реальном GitHub Actions — успешные, контролируемые и диагностические запуски перечислены в разделе фазы 5. Успешный запуск 38311448403 повторно подтверждён через API в фазе 8.
-- В исходном демонстрационном проекте фазы 6–7 отложены в домашнее задание. В своём форке фаза 6 реализована, локальные проверки и реальная доставка успешного уведомления подтверждены; независимая сверка JUnit XML остаётся открытой. Фаза 7 не начата.
+- В исходном демонстрационном проекте фазы 6–7 отложены в домашнее задание. В своём форке фаза 6 завершена: локальные проверки, успешный CI, реальная доставка и сверка статистики с предоставленным JUnit XML подтверждены. Фаза 7 не начата.
 - Фаза 8 (Review) выполнена 2026-10-17: объём фаз 0–5 проверен без изменения кода, workflow и инфраструктуры; findings, проверки и ограничения — в разделе фазы 8.
 - Фаза 9 (доработка findings фазы 8) выполнена 2026-10-19: установлена причина sandbox-падения Chrome, обновлены Selenide и CfT, Pages публикуется только при зелёных тестах, усилены Actions permissions, добавлена очистка allure-results — детали и проверки в разделе фазы 9.
 
@@ -263,7 +263,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 
 ## Фаза 6 — Telegram
 
-Статус своего форка (2026-10-26): реализация, локальные проверки и реальная доставка успешного уведомления подтверждены. Для закрытия фазы остаётся независимо сверить статистику с JUnit XML запуска 40287857621. Историческое решение не включать фазу в демонстрационный проект сохраняется только для исходного репозитория.
+Статус своего форка (2026-10-26): фаза завершена в согласованном объёме. Реализация, локальные fixtures/mock HTTP, успешный GitHub Actions и реальная доставка подтверждены; статистика сообщения независимо сверена с предоставленным пользователем JUnit XML. Реальные негативные запуски CI не выполнялись; это ограничение сохранено ниже. Историческое решение не включать фазу в демонстрационный проект сохраняется только для исходного репозитория.
 
 ### Согласовано пользователем
 
@@ -280,7 +280,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - HTTP проверен на локальном `ThreadingHTTPServer`: HTTP 200 + `ok=true`, `ok=false`, HTTP 500, битый JSON, неверный тип JSON; реальный socket timeout и отдельно исключение timeout. Используются только фиктивные credentials; реальные запросы Telegram не выполнялись.
 - `actionlint 1.7.12 -shellcheck= .github/workflows/ui-tests.yml`: 0 ошибок. Официальный архив проверен по SHA-256 release checksums; инструмент находится в игнорируемом `build/phase6-tools`. ShellCheck не запускался.
 - `git diff --check`: без ошибок. `.idea/` не изменялась; результаты тестов, инструменты и секреты не включаются в коммит.
-- Формат XML локально проверен на fixtures. Выполнение workflow на runner теперь подтверждено ниже; независимое чтение фактического XML пока недоступно. Браузерные тесты в этой фазе локально не запускались.
+- Формат XML проверен на fixtures и предоставленном пользователем фактическом XML; выполнение workflow на runner подтверждено ниже. Браузерные тесты в этой фазе локально не запускались.
 
 ### Реальная проверка GitHub Actions и Telegram (2026-10-26)
 
@@ -289,15 +289,16 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Агент независимо прочитал публичный API: `status=completed`, `conclusion=success`, `event=workflow_dispatch`, `head_branch=master`, `run_attempt=1`, SHA совпадает с коммитом реализации. Jobs `ui-tests` (121455667462) и `deploy-report` (121456548596) — success.
 - API jobs подтвердил success шагов `Verify Telegram notification logic without sending`, `Compile tests`, `Run UI tests`, `Upload JUnit XML and Gradle test report`, `Notify Telegram about UI test job` и публикации Pages. Успешный шаг уведомления сам по себе не доказывает доставку, поскольку ошибки API дают warning.
 - Пользователь подтвердил получение и предоставил скриншот сообщения бота `Java ci notifier`: проект `Rikkona/getting-started-java-ai-practise`, CI GitHub Actions, ветка master, коммит `73e11a1062bd`, Job success, Status Tests passed, `passed=3, failed=0, errors=0, skipped=0`, ссылка на тот же run. Проект, ветка, SHA, статус и ссылка совпали с API; получение и содержимое подтверждены пользовательским скриншотом, а не чтением Telegram агентом.
-- API artifacts подтвердил четыре неистёкших артефакта: `junit-and-gradle-report` (12634398306), `allure-results`, `allure-report`, `github-pages`. Попытка скачать JUnit ZIP через публичный API без авторизации вернула HTTP 401; исходный XML агент не прочитал, независимая сверка чисел ещё не выполнена.
+- API artifacts подтвердил четыре неистёкших артефакта: `junit-and-gradle-report` (12634398306), `allure-results`, `allure-report`, `github-pages`. Попытка скачать JUnit ZIP через публичный API без авторизации вернула HTTP 401; затем пользователь предоставил отдельный XML для сверки.
 - Команды: Git for Windows `curl.exe -fsSL` к `/actions/runs/40287857621`, `/jobs`, `/artifacts`; скачивание `/actions/artifacts/12634398306/zip` — HTTP 401. JSON диагностики хранится только в игнорируемом `build/phase6-tools`; скриншот и credentials в репозиторий не добавлялись.
 - Негативные сценарии подтверждены локальными fixtures/mock HTTP; реальные failed/build-error запуски и намеренные ошибки Telegram в CI не выполнялись и успешным run не подтверждаются.
+- Финальная сверка: пользователь предоставил `TEST-tests.SearchTests.xml` из отчёта. Агент прочитал его через Python `xml.etree.ElementTree`: suite `tests.SearchTests`, timestamp `2026-10-26T07:48:48.057Z`, tests=3, failures=0, errors=0, skipped=0. Независимый подсчёт `testcase` подтвердил три passed: `successfulSearchTest()`, `noResultsForImpossibleStarsRangeTest()`, `noResultsForHugeStarsCountTest()`. Все четыре счётчика совпали со скриншотом Telegram. Происхождение файла из указанного run предоставлено пользователем; ZIP напрямую через API не скачан.
+- Тот же XML отдельно проверен рабочим `scripts/telegram_notify.py:read_results` во временном каталоге: `({'passed': 3, 'failed': 0, 'errors': 0, 'skipped': 0}, None)`. Исходный XML и остальные файлы отчёта в репозиторий не добавлялись. Коммит реализации — `73e11a1`, промежуточная фиксация реальной доставки — `d319ad2`.
 
 ### Следующие шаги
 
-1. Пользователь скачивает `junit-and-gradle-report` из указанного run и предоставляет ZIP либо `TEST-*.xml` для независимой сверки чисел; токены для этого в чат не нужны.
-2. Сверить XML с полученным сообщением и записать результат здесь; до этого не отмечать фазу полностью закрытой.
-3. Jenkins обсуждается только после отдельного подтверждения фазы 7.
+1. Фаза 6 закрыта; результаты сохранены в плане. Push коммитов документации после `73e11a1` отдельно не выполнялся.
+2. Jenkins обсуждается только после отдельного подтверждения фазы 7.
 
 Документация: [Telegram Bot API](https://core.telegram.org/bots/api#making-requests), [GitHub status check functions](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions), [Gradle test reporting](https://docs.gradle.org/current/userguide/java_testing.html#test_reporting).
 
@@ -310,7 +311,7 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 ### Реализация и проверка
 
 - [x] Использовать secrets окружения без хардкода и логирования.
-- [ ] Брать passed/failed/skipped из проверенного формата JUnit XML; fixtures проверены, фактический XML CI ещё не сверен.
+- [x] Брать passed/failed/skipped из проверенного формата JUnit XML; fixtures и предоставленный XML реального запуска сверены.
 - [x] Отличать сбой сборки до запуска тестов от успешного запуска с нулём тестов (локальные проверки).
 - [x] Включить проект, CI, branch/commit, статус тестов, статистику и ссылку на запуск (локальные проверки).
 - [x] Проверять HTTP-ответ и результат Telegram API; не маскировать исходное падение ошибкой уведомления (mock HTTP).
