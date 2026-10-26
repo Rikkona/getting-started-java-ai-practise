@@ -371,6 +371,15 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Для доставки потребуется доступный агент либо согласованный со стендом HTTPS-прокси/исправление сетевого доступа. Прокси, VPN, relay, маршруты, DNS и firewall не менялись; TLS-проверка не отключалась. До изменения условий дальнейшие отправки с тем же окружением не выполняются как беспричинные ретраи.
 - Независимая работа фазы 7 остаётся возможной: контролируемый assertion failure, compile failure и отсутствие результатов с проверкой FAILURE, JUnit и сохранения диагностики. Фаза не отмечается завершённой до выполнения обязательных проверок; сетевая доставка Telegram остаётся явно непроверенной.
 
+### Контролируемое падение assertion — сборка 16
+
+- Пользователь выполнил Replay сборки 13 с временным скриптом из игнорируемого `build/phase7-validation`. Checkout `f013973` изменён только внутри `build/jenkins-run-16`: ожидаемый текст одного assertion заменён с QA.GURU на `CONTROLLED_ASSERTION_FAILURE_20261026`. Ветка master и её тесты не менялись; временные ветки на GitHub не создавались.
+- По предоставленному логу [сборки 16](https://jenkins.qa.guru/job/Rikkona-ui-tests/16/): компиляция успешна, 3 tests completed, 1 failed (`successfulSearchTest`, ElementShould на строке 13), Gradle test exit 1. JUnit записан, Allure сгенерирован, выполнено архивирование; итог Jenkins FAILURE.
+- Затем тот же Replay выполнил рабочий `telegram_notify.main` с фиктивными credentials и mock opener, выбрасывающим URLError. Предупреждение уведомления не изменило FAILURE. Это проверка сохранения статуса на реальном Jenkins при имитированной ошибке отправки; реальный Telegram API не вызывался.
+- Агент независимо прочитал предоставленный пользователем `allure-report (1).tgz`: summary total=3, passed=2, failed=1, broken=0, skipped=0. Статус и сообщение `successfulSearchTest()` содержат контролируемый маркер; остальные два теста passed. В attachments упавшего теста Screenshot (`image/png`, 189758 bytes) и Page source (`text/html`, 250760 bytes). Оба payload присутствуют в архиве; PNG signature и размеры сверены. Это программная проверка архива; визуальная приёмка failed-отчёта пользователем отдельно не зафиксирована.
+- Предыдущая попытка Replay завершилась ошибкой разбора WorkflowScript в строке 3 до запуска Pipeline и не засчитывается как assertion failure. После полного копирования файла сборка 16 исполнилась; номер неуспешной попытки в предоставленном логе не указан.
+- Далее подготовлен `build/phase7-validation/compilation-failure.Jenkinsfile`: временная ошибка Java в checkout, без изменения master и реальных Telegram credentials. Этот сценарий на момент записи ещё не выполнялся.
+
 ### Подготовленные файлы и локальные проверки
 
 - `Jenkinsfile`: SCM checkout в отдельный `build/jenkins-run-BUILD_NUMBER`, инструменты в `build/jenkins-tools`, Gradle от пользователя jenkins с отдельным GRADLE_USER_HOME. Владелец меняется только у checkout текущего запуска; чужие задачи и их каталоги не затрагиваются. Старые результаты не копируются в новый checkout.
