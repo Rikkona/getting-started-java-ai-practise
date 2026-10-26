@@ -380,6 +380,14 @@ gradle test --tests SearchTests.successfulSearchTest --rerun-tasks --console=pla
 - Предыдущая попытка Replay завершилась ошибкой разбора WorkflowScript в строке 3 до запуска Pipeline и не засчитывается как assertion failure. После полного копирования файла сборка 16 исполнилась; номер неуспешной попытки в предоставленном логе не указан.
 - Далее подготовлен `build/phase7-validation/compilation-failure.Jenkinsfile`: временная ошибка Java в checkout, без изменения master и реальных Telegram credentials. Этот сценарий на момент записи ещё не выполнялся.
 
+### Контролируемая ошибка Java-компиляции — сборка 17
+
+- По предоставленному пользователем логу [сборки 17](https://jenkins.qa.guru/job/Rikkona-ui-tests/17/): Replay сборки 13, checkout `f013973`; инструменты и 13 проверок уведомлений успешны. Только в checkout текущего запуска в SearchTests.java добавлен некорректный Java-маркер `CONTROLLED_COMPILATION_FAILURE`.
+- `compileTestJava` завершился ошибкой Java на строке 31 (`reached end of file while parsing`), Gradle BUILD FAILED in 27s, exit 1. Это ошибка компиляции тестового Java-кода, а не ошибка разбора Groovy/Jenkinsfile. Run UI tests пропущен из-за предыдущего failure.
+- Post-блок не запускал JUnit и генератор Allure: тесты не выполнялись, старые результаты из других checkout не подставлялись. Выполнен archiveArtifacts; наличие конкретных файлов в артефактах этой сборки не проверено. Диагностика компилятора присутствует в сохранённой консоли; `build/reports/problems/problems-report.html` текущим шаблоном архивирования не охвачен.
+- Mock-ошибка уведомления дала warning, итог остался FAILURE. Настоящие credentials и Telegram HTTP не использовались. Ветка master и её исходники не менялись.
+- Подготовлен следующий временный Replay `build/phase7-validation/no-results.Jenkinsfile`: обычные тесты выполняются, затем JUnit/Allure results перемещаются в диагностические каталоги внутри checkout, без удаления. Штатные потребители должны отвергнуть отсутствие результатов по ожидаемым путям; диагностические каталоги включены в архивирование этого Replay. Сценарий пока не выполнялся.
+
 ### Подготовленные файлы и локальные проверки
 
 - `Jenkinsfile`: SCM checkout в отдельный `build/jenkins-run-BUILD_NUMBER`, инструменты в `build/jenkins-tools`, Gradle от пользователя jenkins с отдельным GRADLE_USER_HOME. Владелец меняется только у checkout текущего запуска; чужие задачи и их каталоги не затрагиваются. Старые результаты не копируются в новый checkout.
