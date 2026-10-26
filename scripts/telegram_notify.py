@@ -43,11 +43,13 @@ def build_message(env):
     else:
         status = 'Build/setup failed before tests'
         statistics = 'Tests did not run; statistics unavailable'
-    lines = [env.get('GITHUB_REPOSITORY', 'Unknown project'), 'CI: GitHub Actions',
-             f"Branch: {env.get('GITHUB_REF_NAME', 'unknown')}",
-             f"Commit: {env.get('GITHUB_SHA', 'unknown')[:12]}",
+    run_url = env.get('RUN_URL') or f"{env.get('GITHUB_SERVER_URL', 'https://github.com')}/{env.get('GITHUB_REPOSITORY', '')}/actions/runs/{env.get('GITHUB_RUN_ID', '')}"
+    lines = [env.get('PROJECT_NAME', env.get('GITHUB_REPOSITORY', 'Unknown project')),
+             f"CI: {env.get('CI_NAME', 'GitHub Actions')}",
+             f"Branch: {env.get('CI_BRANCH', env.get('GITHUB_REF_NAME', 'unknown'))}",
+             f"Commit: {env.get('CI_COMMIT', env.get('GITHUB_SHA', 'unknown'))[:12]}",
              f"Job: {env.get('JOB_STATUS', 'unknown')}", f'Status: {status}', statistics,
-             f"{env.get('GITHUB_SERVER_URL', 'https://github.com')}/{env.get('GITHUB_REPOSITORY', '')}/actions/runs/{env.get('GITHUB_RUN_ID', '')}"]
+             run_url]
     return '\n'.join(lines)
 
 

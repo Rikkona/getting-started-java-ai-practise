@@ -50,6 +50,17 @@ class ResultsTests(unittest.TestCase):
         self.write('<testsuite><testcase><skipped/></testcase></testsuite>')
         self.assertIn('All tests skipped', notify.build_message(self.env))
 
+    def test_jenkins_metadata(self):
+        self.write('<testsuite><testcase/></testsuite>')
+        self.env.update(CI_NAME='Jenkins', PROJECT_NAME='owner/project',
+                        CI_BRANCH='origin/master', CI_COMMIT='abcdef1234567890',
+                        RUN_URL='https://jenkins.example/job/ui/7/')
+        message = notify.build_message(self.env)
+        for value in ('CI: Jenkins', 'origin/master', 'abcdef123456',
+                      'https://jenkins.example/job/ui/7/', 'passed=1'):
+            self.assertIn(value, message)
+        self.assertNotIn('/actions/runs/', message)
+
     def test_successful_delivery(self):
         self.env.update(TELEGRAM_BOT_TOKEN='fake-token', TELEGRAM_CHAT_ID='fake-chat')
         sender = Mock(return_value=True)
